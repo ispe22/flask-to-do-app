@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}To-Do{% endblock %}</title>
+  <link rel="icon" type="image/png" href="{{ url_for('static', filename='favicon.png') }}">
+  {{ bootstrap.load_css() }}
+  <style>
+    body, html { height: 100%; overflow-x: hidden; }
+    .sidebar { min-height: 100vh; background: #f8f9fa; }
+    input[type="checkbox"]:checked { accent-color: green; background-color: green; }
+    .due-date { font-size: 0.8em; color: #6c757d; }
+    .handle { cursor: grab; }
+    .sortable-ghost { opacity: 0.4; background: #c8ebfb; }
+    .list-group-item.active {
+        background-color: #e9ecef;
+        color: #212529;
+        border-color: #dee2e6;
+    }
+  </style>
+</head>
+<body>
+  {% include "header.html" %}
+  {% block content %}{% endblock %}
+  {{ bootstrap.load_js() }}
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}To-Do Lists{% endblock %}
+
+{% block content %}
+<div class="container-fluid p-0">
+  <div class="row g-0">
+
+    <!-- Left column: Lists -->
+    <div class="col-lg-2 col-md-3 border-end sidebar">
+      <div class="p-3">
+        <h2 class="display-6 pb-2 mb-3 border-bottom">My Lists</h2>
+        
+        <form action="{{ url_for('add_list') }}" method="POST" class="mb-3">
+            <div class="input-group">
+                <input type="text" name="new_list_name" placeholder="Create new list..." class="form-control" required
+                      {% if not current_user.is_authenticated %}disabled{% endif %}>
+                <button class="btn btn-outline-primary" type="submit"
+                        {% if not current_user.is_authenticated %}disabled{% endif %}>+</button>
+            </div>
+        </form>
+
+        {% if current_user.is_authenticated %}
+        <div class="list-group list-group-flush">
+          {% for lst in lists %}
+            <div class="list-group-item d-flex justify-content-between align-items-center p-0 {% if current_list and lst.id == current_list.id %}active{% endif %}">
+              <a href="{{ url_for('view_list', list_id=lst.id) }}" class="text-decoration-none text-dark flex-grow-1 p-2">{{ lst.name }}</a>
+              <div class="btn-group me-2" role="group">
+                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" data-bs-toggle="modal" data-bs-target="#editListModal" data-list-id="{{ lst.id }}" data-list-name="{{ lst.name }}">✎</button>
+                <form action="{{ url_for('delete_list', list_id=lst.id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this list and all its tasks?');">
+                  <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2">🗑</button>
+                </form>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Right column: Tasks -->
+    <div class="col-lg-10 col-md-9 p-4">
+
+      <!-- Flashed Messages -->
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+              {{ message }}
+              <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+
+      {% if current_list %}
+        <h1 class="display-5 pb-2 mb-4 border-bottom">{{ current_list.name }}</h1>
+        {% if not current_user.is_authenticated %}
+            <div class="alert alert-warning">
+                This is a demo. Your changes will not be saved.
+            </div>
+        {% endif %}
+        <form action="{{ url_for('add_task', list_id=current_list.id) if current_list else '' }}" method="POST" class="d-flex mb-4 align-items-center gap-2">
+            <input type="text" name="task" placeholder="Add a new task..." class="form-control" required
+                  {% if not current_user.is_authenticated %}disabled{% endif %}>
+            <input type="date" name="due_date" class="form-control" style="width: auto;"
+                  {% if not current_user.is_authenticated %}disabled{% endif %}>
+            <button type="submit" class="btn btn-primary"
+                    {% if not current_user.is_authenticated %}disabled{% endif %}>Add</button>
+        </form>
+
+        <!-- PENDING TASKS -->
+        <ul id="todo-list" class="list-group mb-4">
+          {% for todo in todos if not todo.done %}
+            <li class="list-group-item d-flex align-items-center justify-content-between" data-id="{{ todo.id }}">
+              <div class="d-flex align-items-center">
+                <span class="handle me-3">☰</span>
+                <form action="{{ url_for('toggle_task', task_id=todo.id) }}" method="POST" class="me-3">
+                    <input type="checkbox" class="form-check-input" style="transform: scale(1.5);" onchange="this.form.submit()"
+                    {% if not current_user.is_authenticated %}disabled{% endif %} >
+                </form>
+                <div>
+                    <span>{{ todo.task }}</span>
+                    {% if todo.due_date %}<div class="due-date">Due: {{ todo.due_date.strftime('%b %d, %Y') }}</div>{% endif %}
+                </div>
+              </div>
+              <!-- Task Action Buttons -->
+              <div class="btn-group" role="group">
+                  <button type="button" class="btn btn-outline-secondary btn-sm"
+                          data-bs-toggle="modal" data-bs-target="#editTaskModal"
+                          data-task-id="{{ todo.id }}" data-task-text="{{ todo.task }}"
+                          data-task-due="{{ todo.due_date.strftime('%Y-%m-%d') if todo.due_date else '' }}"
+                          {% if not current_user.is_authenticated %}disabled{% endif %}>Edit</button>
+                  <form action="{{ url_for('delete_task', task_id=todo.id) }}" method="POST" class="d-inline">
+                      <button type="submit" class="btn btn-outline-danger btn-sm"
+                              {% if not current_user.is_authenticated %}disabled{% endif %}>Delete</button>
+                  </form>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+
+        <!-- DONE TASKS -->
+        {% if todos | selectattr('done') | list | length > 0 %}
+        <h5 class="text-muted">COMPLETED</h5>
+        <ul class="list-group">
+          {% for todo in todos if todo.done %}
+            <li class="list-group-item d-flex align-items-center justify-content-between text-muted">
+              <div class="d-flex align-items-center">
+                <form action="{{ url_for('toggle_task', task_id=todo.id) }}" method="POST" class="me-3">
+                    <input type="checkbox" class="form-check-input" style="transform: scale(1.5);" onchange="this.form.submit()" 
+                    {% if not current_user.is_authenticated %}disabled{% endif %} checked>
+                </form>
+                <span style="text-decoration: line-through;">{{ todo.task }}</span>
+              </div>
+              <form action="{{ url_for('delete_task', task_id=todo.id) }}" method="POST" class="d-inline">
+                  <button type="submit" class="btn btn-outline-danger btn-sm"
+                  {% if not current_user.is_authenticated %}disabled{% endif %}>Delete</button>
+              </form>
+            </li>
+          {% endfor %}
+        </ul>
+        {% endif %}
+      {% else %}
+        <div class="text-center p-5">
+            <h1 class="display-4">Welcome!</h1>
+            <p class="lead">Create a list on the left to get started.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Edit List Modal -->
+<div class="modal fade" id="editListModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Edit List Name</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="editListForm" method="POST">
+        <div class="modal-body"><input type="text" id="list-name-input" name="new_list_name" class="form-control" required></div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="submit" class="btn btn-primary">Save changes</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div class="modal fade" id="editTaskModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Edit Task</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+      <form id="editTaskForm" method="POST">
+        <div class="modal-body">
+            <div class="mb-3"><label for="task-text-input" class="form-label">Task</label><input type="text" id="task-text-input" name="task" class="form-control" required></div>
+            <div class="mb-3"><label for="task-due-date-input" class="form-label">Due Date</label><input type="date" id="task-due-date-input" name="due_date" class="form-control"></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button><button type="submit" class="btn btn-primary">Save changes</button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // --- Script for Edit List Modal ---
+    const editListModal = document.getElementById('editListModal');
+    if (editListModal) {
+      editListModal.addEventListener('show.bs.modal', function (event) {
+          const button = event.relatedTarget;
+          const listId = button.getAttribute('data-list-id');
+          const listName = button.getAttribute('data-list-name');
+          const modalForm = editListModal.querySelector('#editListForm');
+          modalForm.action = `/edit_list/${listId}`;
+          const modalInput = editListModal.querySelector('#list-name-input');
+          modalInput.value = listName;
+          setTimeout(() => modalInput.focus(), 500);
+      });
+    }
+
+    // --- Script for Edit Task Modal ---
+    const editTaskModal = document.getElementById('editTaskModal');
+    if (editTaskModal) {
+        editTaskModal.addEventListener('show.bs.modal', function(event) {
+            const button = event.relatedTarget;
+            const taskId = button.getAttribute('data-task-id');
+            const taskText = button.getAttribute('data-task-text');
+            const taskDue = button.getAttribute('data-task-due');
+            
+            const modalForm = editTaskModal.querySelector('#editTaskForm');
+            modalForm.action = `/edit_task/${taskId}`;
+            
+            editTaskModal.querySelector('#task-text-input').value = taskText;
+            editTaskModal.querySelector('#task-due-date-input').value = taskDue;
+        });
+    }
+
+    // --- Script for Drag-and-Drop Reordering ---
+    const todoListElement = document.getElementById('todo-list');
+    if (todoListElement) {
+        new Sortable(todoListElement, {
+            handle: '.handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function (evt) {
+                const items = evt.target.children;
+                const task_ids = Array.from(items).map(item => item.dataset.id);
+                fetch('/reorder_tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ task_ids: task_ids })
+                }).catch(error => console.error('Error reordering tasks:', error));
+            }
+        });
+    }
+});
+</script>
+{% endblock %}
