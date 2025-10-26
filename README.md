@@ -2,7 +2,7 @@
 
 **Live Demo:** [https://flask-to-do-app-l2h1.onrender.com](https://flask-to-do-app-l2h1.onrender.com)
 
-*Note: The live website may take a minute to deploy due to Render's free-tier cold start.*
+*Note: The live website may take up to a minute to load due to Render's free-tier cold start. Also, the free-tier Supabase database may occasionally cause slow connections or errors.*
 
 A full-stack to-do list web application built with Python and the Flask framework. The project features multi-list management, user authentication, and a dynamic, drag-and-drop interface for task reordering.
 
